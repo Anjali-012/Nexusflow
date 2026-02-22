@@ -3,6 +3,8 @@ import helmet from "helmet";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./lib/db";
+import authRoutes from "./routes/auth.routes";
+import workflowRoutes from "./routes/workflow.routes";
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.use(
 );
 app.use(express.json());
 
+// Routes
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -25,6 +28,12 @@ app.get("/health", (_req, res) => {
     version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
+});
+
+app.use("/auth", authRoutes);
+app.use("/workflows", workflowRoutes);
+app.post("/test", (req, res) => {
+  res.json({ message: "test works", body: req.body });
 });
 
 const start = async () => {
