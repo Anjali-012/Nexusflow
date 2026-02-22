@@ -5,3 +5,4 @@ dist
 .env.local
 *.log
 .DS_Store
+NexusFlow_SRS 12.02.13 PM.pdf
