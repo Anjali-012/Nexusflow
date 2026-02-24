@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./lib/db";
 import authRoutes from "./routes/auth.routes";
 import workflowRoutes from "./routes/workflow.routes";
+import webhookRoutes from "./routes/webhook.routes";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use("/workflows", workflowRoutes);
 app.post("/test", (req, res) => {
   res.json({ message: "test works", body: req.body });
 });
+app.use("/webhooks", webhookRoutes);
 
 const start = async () => {
   await connectDB();
