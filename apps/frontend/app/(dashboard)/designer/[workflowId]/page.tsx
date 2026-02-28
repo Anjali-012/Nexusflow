@@ -177,7 +177,7 @@ export default function DesignerPage() {
   const triggerWorkflow = async () => {
     setTriggering(true);
     try {
-      await api.post(`/workflows/${workflowId}/trigger`, {});
+      await api.post(`/webhooks/manual/${workflowId}`, {});
       toast.success("Workflow triggered!");
     } catch {
       toast.error("Failed to trigger workflow");
