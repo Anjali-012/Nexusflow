@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import workflowRoutes from "./routes/workflow.routes";
 import webhookRoutes from "./routes/webhook.routes";
 import executionRoutes from "./routes/execution.routes";
+import { webhookRateLimiter, authRateLimiter } from "./middleware/rateLimiter";
 
 dotenv.config();
 
@@ -32,12 +33,12 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.use("/auth", authRoutes);
+app.use("/auth", authRateLimiter, authRoutes);
 app.use("/workflows", workflowRoutes);
 app.post("/test", (req, res) => {
   res.json({ message: "test works", body: req.body });
 });
-app.use("/webhooks", webhookRoutes);
+app.use("/webhooks", webhookRateLimiter, webhookRoutes);
 app.use("/executions", executionRoutes);
 
 const start = async () => {
