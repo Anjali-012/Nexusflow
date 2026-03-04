@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Workflow } from "../models/workflow.model";
 import { ExecutionRun, ExecutionStep } from "../models/execution.model";
 import { executeHttpAction } from "../adapters/httpAction";
-import { WorkflowJobData } from "../lib/queue";
+import { WorkflowJobData } from "../lib/types";
 
 export interface ExecutionContext {
   workflowId: string;

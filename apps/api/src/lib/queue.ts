@@ -1,36 +1,38 @@
 import { Queue } from "bullmq";
+import { WorkflowJobData, RetryPolicy, DEFAULT_RETRY_POLICY } from "./types";
 
-// Pass connection options directly — NOT the ioredis instance
-// BullMQ bundles its own ioredis internally, passing an external instance causes type conflicts
-const connection = {
+const redisConnection = {
   host: process.env.REDIS_HOST || "localhost",
   port: Number(process.env.REDIS_PORT) || 6379,
 };
 
-export const workflowQueue = new Queue("nexusflow-jobs", {
-  connection,
+export const QUEUE_NAME = "nexusflow-jobs";
+
+export const workflowQueue = new Queue<WorkflowJobData>(QUEUE_NAME, {
+  connection: redisConnection,
   defaultJobOptions: {
-    attempts: 3,
+    attempts: DEFAULT_RETRY_POLICY.maxRetries + 1,
     backoff: {
       type: "exponential",
-      delay: 1000,
+      delay: DEFAULT_RETRY_POLICY.baseDelayMs,
     },
     removeOnComplete: 100,
     removeOnFail: 200,
   },
 });
 
-export interface WorkflowJobData {
-  workflowId: string;
-  tenantId: string;
-  triggerPayload: Record<string, unknown>;
-  correlationId: string;
-  triggeredBy: "webhook" | "manual" | "schedule";
-}
-
-export const enqueueWorkflow = async (data: WorkflowJobData) => {
-  const job = await workflowQueue.add("run-workflow", data, {
+export const enqueueWorkflow = async (
+  data: WorkflowJobData,
+  retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY,
+) => {
+  return workflowQueue.add("run-workflow", data, {
     jobId: data.correlationId,
+    attempts: retryPolicy.maxRetries + 1,
+    backoff: {
+      type: "exponential",
+      delay: retryPolicy.baseDelayMs,
+    },
   });
-  return job;
 };
+
+export { WorkflowJobData, RetryPolicy };
