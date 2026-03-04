@@ -1,7 +1,6 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -18,6 +17,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -29,7 +29,8 @@ export default function LoginPage() {
       const { data } = await api.post("/auth/login", form);
       login(data.user, data.token);
       toast.success("Welcome back!");
-      router.push("/dashboard");
+      const redirectTo = searchParams.get("redirect") || "/dashboard";
+      router.push(redirectTo);
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       toast.error(error.response?.data?.message || "Login failed");
