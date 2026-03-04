@@ -8,6 +8,7 @@ import workflowRoutes from "./routes/workflow.routes";
 import webhookRoutes from "./routes/webhook.routes";
 import executionRoutes from "./routes/execution.routes";
 import { webhookRateLimiter, authRateLimiter } from "./middleware/rateLimiter";
+import streamRoutes from "./routes/stream.routes";
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.post("/test", (req, res) => {
 });
 app.use("/webhooks", webhookRateLimiter, webhookRoutes);
 app.use("/executions", executionRoutes);
+app.use("/executions", streamRoutes);
 
 const start = async () => {
   await connectDB();

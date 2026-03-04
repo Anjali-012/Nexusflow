@@ -23,6 +23,7 @@ import { useWorkflowStore, NodeType, NodeSubType } from "@/store/workflowStore";
 import { NODE_PALETTE } from "@/lib/nodeRegistry";
 import Canvas from "@/components/designer/Canvas";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import ExecutionPanel from "@/components/designer/ExecutionPanel";
 
 const SUBTYPE_ICONS: Record<string, React.ReactNode> = {
   webhook: <Webhook size={14} />,
@@ -50,7 +51,6 @@ function NodePalette({
   onAdd: (type: NodeType, sub: NodeSubType) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-
   const toggle = (label: string) =>
     setCollapsed((c) => ({ ...c, [label]: !c[label] }));
 
@@ -61,11 +61,9 @@ function NodePalette({
           Node Library
         </p>
       </div>
-
       <div className="flex-1 py-2">
         {NODE_PALETTE.map((category) => (
           <div key={category.label} className="mb-1">
-            {/* Category header */}
             <button
               onClick={() => toggle(category.label)}
               className="w-full flex items-center justify-between px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors"
@@ -77,8 +75,6 @@ function NodePalette({
                 <ChevronDown size={12} />
               )}
             </button>
-
-            {/* Nodes */}
             {!collapsed[category.label] && (
               <div className="px-2 pb-1 space-y-0.5">
                 {category.nodes.map((node) => (
@@ -90,12 +86,7 @@ function NodePalette({
                         node.subType as NodeSubType,
                       )
                     }
-                    className={`
-                      w-full flex items-center gap-2.5 px-3 py-2 rounded-md
-                      border text-left transition-all duration-100
-                      hover:shadow-sm active:scale-[0.98]
-                      ${SUBTYPE_COLORS[node.subType] || "text-slate-600 bg-slate-50 border-slate-200"}
-                    `}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md border text-left transition-all duration-100 hover:shadow-sm active:scale-[0.98] ${SUBTYPE_COLORS[node.subType] || "text-slate-600 bg-slate-50 border-slate-200"}`}
                   >
                     <span className="shrink-0">
                       {SUBTYPE_ICONS[node.subType]}
@@ -115,7 +106,6 @@ function NodePalette({
           </div>
         ))}
       </div>
-
       <div className="px-4 py-3 border-t border-slate-100">
         <p className="text-[10px] text-slate-400 leading-relaxed">
           Click a node to add it to the canvas. Drag to reposition. Press{" "}
@@ -134,9 +124,9 @@ export default function DesignerPage() {
 
   const { addNode, serializeDAG, loadFromAPI, setMeta, meta } =
     useWorkflowStore();
-
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState(false);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
   useAutoSave(workflowId);
 
@@ -177,8 +167,23 @@ export default function DesignerPage() {
   const triggerWorkflow = async () => {
     setTriggering(true);
     try {
-      await api.post(`/webhooks/manual/${workflowId}`, {});
-      toast.success("Workflow triggered!");
+      const { data } = await api.post(`/webhooks/manual/${workflowId}`, {});
+
+      const correlationId = data.correlationId;
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        const runsRes = await api.get(
+          `/executions?workflowId=${workflowId}&limit=1`,
+        );
+        const latestRun = runsRes.data.runs?.[0];
+        if (latestRun?.correlationId === correlationId || attempts > 10) {
+          clearInterval(poll);
+          if (latestRun) setActiveRunId(latestRun._id);
+          // Show toast after panel appears
+          setTimeout(() => toast.success("Workflow completed!"), 1000);
+        }
+      }, 200);
     } catch {
       toast.error("Failed to trigger workflow");
     } finally {
@@ -188,7 +193,6 @@ export default function DesignerPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
-      {/* Top toolbar */}
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-10">
         <div className="flex items-center gap-3">
           <button
@@ -207,7 +211,6 @@ export default function DesignerPage() {
             </p>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -219,7 +222,6 @@ export default function DesignerPage() {
             <Play size={13} className="mr-1.5" />
             {triggering ? "Running..." : "Run Now"}
           </Button>
-
           <Button
             size="sm"
             onClick={saveWorkflow}
@@ -232,11 +234,16 @@ export default function DesignerPage() {
         </div>
       </header>
 
-      {/* Body: sidebar + canvas */}
       <div className="flex flex-1 overflow-hidden">
         <NodePalette onAdd={addNode} />
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden relative">
           <Canvas />
+          {activeRunId && (
+            <ExecutionPanel
+              runId={activeRunId}
+              onClose={() => setActiveRunId(null)}
+            />
+          )}
         </main>
       </div>
     </div>
