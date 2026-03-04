@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Workflow, Clock } from "lucide-react";
+import { Plus, Workflow, Clock, Trash2 } from "lucide-react";
 
 interface Workflow {
   _id: string;
@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWorkflows();
@@ -49,6 +50,21 @@ export default function DashboardPage() {
     }
   };
 
+  const deleteWorkflow = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Delete this workflow? This cannot be undone.")) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/workflows/${id}`);
+      setWorkflows((prev) => prev.filter((w) => w._id !== id));
+      toast.success("Workflow deleted");
+    } catch {
+      toast.error("Failed to delete workflow");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const statusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -64,7 +80,6 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Workflows</h1>
@@ -78,7 +93,6 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Workflow list */}
       {loading ? (
         <div className="text-center py-20 text-slate-400">Loading...</div>
       ) : workflows.length === 0 ? (
@@ -108,11 +122,20 @@ export default function DashboardPage() {
                   <CardTitle className="text-base font-semibold">
                     {workflow.name}
                   </CardTitle>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor(workflow.status)}`}
-                  >
-                    {workflow.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor(workflow.status)}`}
+                    >
+                      {workflow.status}
+                    </span>
+                    <button
+                      onClick={(e) => deleteWorkflow(e, workflow._id)}
+                      disabled={deletingId === workflow._id}
+                      className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
