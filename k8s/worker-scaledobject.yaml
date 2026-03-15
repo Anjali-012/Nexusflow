@@ -1,0 +1,16 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nexusflow-worker-scaler
+spec:
+  scaleTargetRef:
+    name: nexusflow-worker
+  minReplicaCount: 1
+  maxReplicaCount: 20
+  cooldownPeriod: 300
+  triggers:
+    - type: redis
+      metadata:
+        address: redis:6379
+        listName: bull:nexusflow-jobs:wait
+        listLength: "10"

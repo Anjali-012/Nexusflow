@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexusflow-worker
+  labels:
+    app: nexusflow-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexusflow-worker
+  template:
+    metadata:
+      labels:
+        app: nexusflow-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/YOUR_GITHUB_USERNAME/nexusflow-worker:latest
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: nexusflow-secrets
+                  key: MONGODB_URI
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: nexusflow-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: nexusflow-config
+                  key: REDIS_PORT
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nexusflow-secrets
+                  key: ENCRYPTION_KEY
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
