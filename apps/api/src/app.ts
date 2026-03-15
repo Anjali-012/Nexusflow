@@ -8,6 +8,8 @@ import executionRoutes from "./routes/execution.routes";
 import streamRoutes from "./routes/stream.routes";
 import credentialRoutes from "./routes/credential.routes";
 import { webhookRateLimiter, authRateLimiter } from "./middleware/rateLimiter";
+import metricsRouter from "./routes/metrics.routes";
+import { metricsMiddleware } from "./middleware/metrics.middleware";
 
 const app = express();
 
@@ -37,5 +39,7 @@ app.use("/webhooks", ...(isTest ? [] : [webhookRateLimiter]), webhookRoutes);
 app.use("/executions", executionRoutes);
 app.use("/executions", streamRoutes);
 app.use("/credentials", credentialRoutes);
+app.use(metricsMiddleware);
+app.use("/metrics", metricsRouter);
 
 export default app;
