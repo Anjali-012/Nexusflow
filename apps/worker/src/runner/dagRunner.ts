@@ -38,6 +38,7 @@ export async function runDAG(
     status: "running",
     triggeredBy,
     startedAt: runStartedAt,
+    triggerPayload,
   });
 
   const runId = executionRun._id.toString();

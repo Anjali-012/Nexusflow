@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IExecutionRun extends Document {
   tenantId: mongoose.Types.ObjectId;
   workflowId: mongoose.Types.ObjectId;
+  triggerPayload?: Record<string, unknown>;
   correlationId: string;
   status: "running" | "success" | "failed" | "partial" | "cancelled";
   triggeredBy: "webhook" | "manual" | "schedule";
@@ -21,6 +22,7 @@ const ExecutionRunSchema = new Schema<IExecutionRun>(
       required: true,
     },
     correlationId: { type: String, required: true },
+    triggerPayload: { type: Schema.Types.Mixed },
     status: {
       type: String,
       enum: ["running", "success", "failed", "partial", "cancelled"],

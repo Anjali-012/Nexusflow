@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import StatusBadge from "./StatusBadge";
 import StepCard, { ExecutionStep } from "./StepCard";
@@ -15,6 +17,8 @@ export default function RunInspector({
   run: ExecutionRun;
   onBack: () => void;
 }) {
+  const [replaying, setReplaying] = useState(false);
+
   const { data: steps, isLoading } = useQuery({
     queryKey: ["steps", run._id],
     queryFn: async () => {
@@ -23,12 +27,23 @@ export default function RunInspector({
     },
   });
 
+  const handleReplay = async () => {
+    setReplaying(true);
+    try {
+      await api.post(`/executions/${run._id}/replay`);
+      toast.success("Replay enqueued — check History in a moment");
+    } catch {
+      toast.error("Failed to replay execution");
+    } finally {
+      setReplaying(false);
+    }
+  };
+
   const workflowName =
     typeof run.workflowId === "object" ? run.workflowId.name : "Workflow";
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={onBack}
@@ -49,10 +64,21 @@ export default function RunInspector({
           {run.durationMs && (
             <span className="text-xs text-slate-400">{run.durationMs}ms</span>
           )}
+          <button
+            onClick={handleReplay}
+            disabled={replaying}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50"
+          >
+            {replaying ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <RotateCcw size={13} />
+            )}
+            {replaying ? "Replaying..." : "Replay"}
+          </button>
         </div>
       </div>
 
-      {/* Run meta cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           {
@@ -79,7 +105,6 @@ export default function RunInspector({
         ))}
       </div>
 
-      {/* Error message */}
       {run.errorMessage && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-6">
           <p className="text-xs font-semibold text-red-700 mb-1">Error</p>
@@ -87,7 +112,6 @@ export default function RunInspector({
         </div>
       )}
 
-      {/* Steps */}
       <h3 className="text-sm font-semibold text-slate-700 mb-3">
         Execution Steps
       </h3>
