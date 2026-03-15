@@ -1,8 +1,28 @@
-node_modules
-dist
-.next
+# Environment files
 .env
-.env.local
+.env.*
+!.env.example
+!.env.test
+
+# Docker
+.env.production
+
+# Build outputs
+dist/
+.next/
+
+# Dependencies
+node_modules/
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
 NexusFlow_SRS 12.02.13 PM.pdf
