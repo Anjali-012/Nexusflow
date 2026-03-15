@@ -4,6 +4,7 @@ import { connectDB } from "./lib/db";
 import { runDAG } from "./runner/dagRunner";
 import { WorkflowJobData } from "./lib/types";
 import { redisConnection, deadLetterQueue, QUEUE_NAME } from "./lib/queue";
+import logger from "./lib/logger";
 
 dotenv.config();
 
@@ -11,11 +12,13 @@ async function processJob(job: Job<WorkflowJobData>): Promise<void> {
   const attempt = job.attemptsMade + 1;
   const maxAttempts = job.opts.attempts ?? 4;
 
-  console.log(`\n📦 Job received: ${job.id}`);
-  console.log(`   Workflow:     ${job.data.workflowId}`);
-  console.log(`   Triggered by: ${job.data.triggeredBy}`);
-  console.log(`   Correlation:  ${job.data.correlationId}`);
-  console.log(`   Attempt:      ${attempt}/${maxAttempts}`);
+  logger.info("Job received", {
+    jobId: job.id,
+    workflowId: job.data.workflowId,
+    triggeredBy: job.data.triggeredBy,
+    correlationId: job.data.correlationId,
+    attempt: `${attempt}/${maxAttempts}`,
+  });
 
   await runDAG(
     job.data.workflowId,
@@ -28,7 +31,7 @@ async function processJob(job: Job<WorkflowJobData>): Promise<void> {
 
 function attachWorkerEvents(worker: Worker<WorkflowJobData>): void {
   worker.on("completed", (job) => {
-    console.log(`✅ Job completed: ${job.id}`);
+    logger.info("Job completed", { jobId: job.id });
   });
 
   worker.on("failed", async (job, err) => {
@@ -39,30 +42,34 @@ function attachWorkerEvents(worker: Worker<WorkflowJobData>): void {
     const isLastAttempt = attempt >= maxAttempts;
 
     if (isLastAttempt) {
-      console.error(`💀 Job exhausted all retries: ${job.id} — sending to DLQ`);
+      logger.error("Job exhausted all retries — sending to DLQ", {
+        jobId: job.id,
+        error: err.message,
+      });
       await deadLetterQueue.add("dead-letter", job.data, {
         jobId: `dlq-${job.id}`,
       });
     } else {
-      console.warn(
-        `⚠️  Job failed (attempt ${attempt}/${maxAttempts}): ${job.id} — ${err.message}`,
-      );
+      logger.warn("Job failed — will retry", {
+        jobId: job.id,
+        attempt: `${attempt}/${maxAttempts}`,
+        error: err.message,
+      });
     }
   });
 
   worker.on("stalled", (jobId) => {
-    console.warn(`⏸️  Job stalled: ${jobId}`);
+    logger.warn("Job stalled", { jobId });
   });
 
   worker.on("error", (err) => {
-    console.error("🔥 Worker error:", err.message);
+    logger.error("Worker error", { error: err.message });
   });
 }
 
 const start = async () => {
   await connectDB();
-
-  console.log(`✅ NexusFlow Worker started — watching queue: ${QUEUE_NAME}`);
+  logger.info(`NexusFlow Worker started`, { queue: QUEUE_NAME });
 
   const worker = new Worker<WorkflowJobData>(QUEUE_NAME, processJob, {
     connection: redisConnection,
@@ -72,7 +79,7 @@ const start = async () => {
   attachWorkerEvents(worker);
 
   process.on("SIGTERM", async () => {
-    console.log("🛑 SIGTERM received — closing worker gracefully...");
+    logger.info("SIGTERM received — closing worker gracefully");
     await worker.close();
     process.exit(0);
   });
