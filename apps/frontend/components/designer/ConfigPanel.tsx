@@ -236,6 +236,57 @@ export default function ConfigPanel() {
             </div>
           )}
 
+          {subType === "ai_copilot" && (
+            <>
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-1">
+                  Instruction
+                </label>
+                <textarea
+                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm h-24 resize-none"
+                  placeholder="Analyze the sentiment of {{trigger.message}} and classify it as positive, negative, or neutral."
+                  value={config.instruction || ""}
+                  onChange={(e) =>
+                    setConfig((c) => ({ ...c, instruction: e.target.value }))
+                  }
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Use {"{{trigger.field}}"} to reference workflow data.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-1">
+                  Output Schema (JSON)
+                </label>
+                <textarea
+                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm font-mono h-24 resize-none"
+                  placeholder='{"sentiment": "string", "confidence": "number"}'
+                  value={config.outputSchema || ""}
+                  onChange={(e) =>
+                    setConfig((c) => ({ ...c, outputSchema: e.target.value }))
+                  }
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Define expected output fields with types: string, number,
+                  boolean.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-1">
+                  Fallback Value (JSON, optional)
+                </label>
+                <textarea
+                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm font-mono h-16 resize-none"
+                  placeholder='{"sentiment": "neutral", "confidence": 0}'
+                  value={config.fallbackValue || ""}
+                  onChange={(e) =>
+                    setConfig((c) => ({ ...c, fallbackValue: e.target.value }))
+                  }
+                />
+              </div>
+            </>
+          )}
+
           {subType === "manual" && (
             <p className="text-sm text-slate-400">
               Manual triggers have no configuration. Use the Run Now button to

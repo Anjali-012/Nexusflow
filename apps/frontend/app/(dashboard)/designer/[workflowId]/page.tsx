@@ -33,6 +33,7 @@ const SUBTYPE_ICONS: Record<string, React.ReactNode> = {
   if_condition: <GitBranch size={14} />,
   data_mapper: <Shuffle size={14} />,
   delay: <Timer size={14} />,
+  ai_copilot: <Zap size={14} />,
 };
 
 const SUBTYPE_COLORS: Record<string, string> = {
@@ -43,6 +44,7 @@ const SUBTYPE_COLORS: Record<string, string> = {
   if_condition: "text-purple-600 bg-purple-50 border-purple-200",
   data_mapper: "text-cyan-600 bg-cyan-50 border-cyan-200",
   delay: "text-yellow-600 bg-yellow-50 border-yellow-200",
+  ai_copilot: "text-pink-600 bg-pink-50 border-pink-200",
 };
 
 function NodePalette({

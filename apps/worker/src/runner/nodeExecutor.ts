@@ -1,18 +1,11 @@
 import { executeHttpAction } from "../adapters/httpAction";
+import { executeAINode, AINodeConfig } from "../adapters/aiCopilot";
 import {
   resolveTemplate,
   resolveConfig,
   ExecutionContext,
 } from "./templateResolver";
-
-type NodeSubType =
-  | "webhook"
-  | "manual"
-  | "schedule"
-  | "http_request"
-  | "delay"
-  | "if_condition"
-  | "data_mapper";
+import logger from "../lib/logger";
 
 interface WorkflowNode {
   id: string;
@@ -37,7 +30,7 @@ export async function executeNode(
 
     case "delay": {
       const delayMs = Number(resolvedConfig.delayMs) || 1000;
-      console.log(`[NodeExecutor] Delaying ${delayMs}ms`);
+      logger.info(`Delaying ${delayMs}ms`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       return { delayed: delayMs };
     }
@@ -76,8 +69,16 @@ export async function executeNode(
       return { [targetField]: resolved };
     }
 
+    case "ai_copilot": {
+      const result = await executeAINode(
+        resolvedConfig as unknown as AINodeConfig,
+        { trigger: ctx.triggerPayload, nodes: ctx.nodeOutputs },
+      );
+      return result.output;
+    }
+
     default:
-      console.warn(`[NodeExecutor] Unknown node subType: ${node.subType}`);
+      logger.warn(`Unknown node subType: ${node.subType}`);
       return {};
   }
 }

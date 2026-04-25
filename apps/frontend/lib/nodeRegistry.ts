@@ -12,6 +12,7 @@ export const nodeTypes: NodeTypes = {
   delay: HttpActionNode,
   if_condition: IfConditionNode,
   data_mapper: TransformNode,
+  ai_copilot: HttpActionNode,
 };
 
 export type NodeCategory = {
@@ -84,6 +85,17 @@ export const NODE_PALETTE: NodeCategory[] = [
         label: "Transform",
         nodeType: "transformer",
         description: "Reshape data between nodes",
+      },
+    ],
+  },
+  {
+    label: "AI",
+    nodes: [
+      {
+        subType: "ai_copilot",
+        label: "AI Copilot",
+        nodeType: "action",
+        description: "Natural language AI decision making",
       },
     ],
   },
