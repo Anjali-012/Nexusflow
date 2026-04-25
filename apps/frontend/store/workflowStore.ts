@@ -152,7 +152,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   serializeDAG: () => {
     const { nodes, edges } = get();
+
+    // Find trigger node to set workflow trigger type
+    const triggerNode = nodes.find((n) => n.data.nodeType === "trigger");
+    const trigger = triggerNode
+      ? {
+          type: triggerNode.data.subType,
+          config: triggerNode.data.config || {},
+          webhookId: triggerNode.data.config?.webhookId,
+        }
+      : undefined;
+
     return {
+      ...(trigger && { trigger }),
       nodes: nodes.map((n) => ({
         id: n.id,
         nodeType: n.data.nodeType,

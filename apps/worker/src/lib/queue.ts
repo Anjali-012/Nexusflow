@@ -1,5 +1,5 @@
 import { Queue, QueueEvents } from "bullmq";
-import { WorkflowJobData } from "./types";
+import { WorkflowJobData, DEFAULT_RETRY_POLICY } from "./types";
 
 export const redisConnection = {
   host: process.env.REDIS_HOST || "localhost",
@@ -20,3 +20,18 @@ export const deadLetterQueue = new Queue<WorkflowJobData>(DLQ_NAME, {
 export const queueEvents = new QueueEvents(QUEUE_NAME, {
   connection: redisConnection,
 });
+
+export const workflowQueue = new Queue<WorkflowJobData>(QUEUE_NAME, {
+  connection: redisConnection,
+});
+
+export const enqueueWorkflow = async (data: WorkflowJobData) => {
+  return workflowQueue.add("run-workflow", data, {
+    jobId: data.correlationId,
+    attempts: DEFAULT_RETRY_POLICY.maxRetries + 1,
+    backoff: {
+      type: "exponential",
+      delay: DEFAULT_RETRY_POLICY.baseDelayMs,
+    },
+  });
+};

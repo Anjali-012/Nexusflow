@@ -5,6 +5,7 @@ import { runDAG } from "./runner/dagRunner";
 import { WorkflowJobData } from "./lib/types";
 import { redisConnection, deadLetterQueue, QUEUE_NAME } from "./lib/queue";
 import logger from "./lib/logger";
+import { startScheduler } from "./scheduler";
 
 dotenv.config();
 
@@ -69,6 +70,7 @@ function attachWorkerEvents(worker: Worker<WorkflowJobData>): void {
 
 const start = async () => {
   await connectDB();
+  await startScheduler();
   logger.info(`NexusFlow Worker started`, { queue: QUEUE_NAME });
 
   const worker = new Worker<WorkflowJobData>(QUEUE_NAME, processJob, {

@@ -34,6 +34,11 @@ export interface IWorkflow extends Document {
     };
     errorBehavior: "stop" | "continue";
   };
+  trigger: {
+    type: "webhook" | "schedule" | "manual";
+    config: Record<string, unknown>;
+    webhookId?: string;
+  };
 }
 
 const NodeSchema = new Schema<INode>(
@@ -89,6 +94,15 @@ const WorkflowSchema = new Schema<IWorkflow>(
         enum: ["stop", "continue"],
         default: "stop",
       },
+    },
+    trigger: {
+      type: {
+        type: String,
+        enum: ["webhook", "schedule", "manual"],
+        default: "manual",
+      },
+      config: { type: Schema.Types.Mixed, default: {} },
+      webhookId: { type: String },
     },
   },
   { timestamps: true },
