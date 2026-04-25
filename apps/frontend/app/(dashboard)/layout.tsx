@@ -64,6 +64,12 @@ export default function DashboardLayout({
           >
             Logout
           </button>
+          <a
+            href="/settings"
+            className="text-sm text-slate-500 hover:text-slate-900"
+          >
+            Settings
+          </a>
         </div>
       </nav>
       <main className="p-6">{children}</main>
