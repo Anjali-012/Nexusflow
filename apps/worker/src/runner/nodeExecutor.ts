@@ -17,7 +17,7 @@ export async function executeNode(
   node: WorkflowNode,
   ctx: ExecutionContext,
 ): Promise<unknown> {
-  const resolvedConfig = resolveConfig(node.config, ctx);
+  const resolvedConfig = await resolveConfig(node.config, ctx);
 
   switch (node.subType) {
     case "webhook":
