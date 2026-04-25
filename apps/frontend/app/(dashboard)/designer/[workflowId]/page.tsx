@@ -24,6 +24,8 @@ import { NODE_PALETTE } from "@/lib/nodeRegistry";
 import Canvas from "@/components/designer/Canvas";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import ExecutionPanel from "@/components/designer/ExecutionPanel";
+import { useCollaboration } from "@/hooks/useCollaboration";
+import CollaboratorPresence from "@/components/designer/CollaboratorPresence";
 
 const SUBTYPE_ICONS: Record<string, React.ReactNode> = {
   webhook: <Webhook size={14} />,
@@ -129,6 +131,7 @@ export default function DesignerPage() {
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const { collaborators, connected } = useCollaboration(workflowId);
 
   useAutoSave(workflowId);
 
@@ -196,6 +199,10 @@ export default function DesignerPage() {
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-10">
+        <CollaboratorPresence
+          collaborators={collaborators}
+          connected={connected}
+        />
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard")}

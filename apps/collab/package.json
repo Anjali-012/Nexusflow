@@ -1,0 +1,24 @@
+{
+  "name": "@nexusflow/collab",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^2.x",
+    "@hocuspocus/extension-database": "^2.x",
+    "@hocuspocus/extension-logger": "^2.x",
+    "yjs": "^13.x",
+    "mongoose": "^8.x",
+    "jsonwebtoken": "^9.x",
+    "dotenv": "^16.x"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@types/node": "^22.x",
+    "@types/jsonwebtoken": "^9.x",
+    "tsx": "^4.x"
+  }
+}
