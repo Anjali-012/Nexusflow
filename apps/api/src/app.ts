@@ -11,13 +11,30 @@ import { webhookRateLimiter, authRateLimiter } from "./middleware/rateLimiter";
 import metricsRouter from "./routes/metrics.routes";
 import apiKeyRoutes from "./routes/apiKey.routes";
 import { apiKeyAuth } from "./middleware/apiKeyAuth";
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+import { workflowQueue } from "./lib/queue";
 import { metricsMiddleware } from "./middleware/metrics.middleware";
 
 const app = express();
 
 const isTest = process.env.NODE_ENV === "test";
 
-app.use(helmet());
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath("/admin/queues");
+
+createBullBoard({
+  queues: [new BullMQAdapter(workflowQueue)],
+  serverAdapter,
+});
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
+
 app.use(
   cors({
     origin: process.env.ALLOWED_ORIGINS || "http://localhost:3000",
@@ -36,6 +53,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use(apiKeyAuth);
+app.use("/admin/queues", serverAdapter.getRouter());
 
 app.use("/auth", ...(isTest ? [] : [authRateLimiter]), authRoutes);
 app.use("/workflows", workflowRoutes);

@@ -32,7 +32,6 @@ const ApiKeySchema = new Schema<IApiKey>(
   { timestamps: true },
 );
 
-ApiKeySchema.index({ keyHash: 1 }, { unique: true });
 ApiKeySchema.index({ tenantId: 1, isRevoked: 1 });
 
 export const ApiKey = mongoose.model<IApiKey>("ApiKey", ApiKeySchema);
