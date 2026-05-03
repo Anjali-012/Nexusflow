@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,66 +16,67 @@ interface Workflow {
   createdAt: string;
 }
 
+const statusColor = (status: string) => {
+  switch (status) {
+    case "active":
+      return "bg-green-100 text-green-800";
+    case "draft":
+      return "bg-slate-100 text-slate-800";
+    case "paused":
+      return "bg-yellow-100 text-yellow-800";
+    default:
+      return "bg-slate-100 text-slate-800";
+  }
+};
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchWorkflows();
-  }, []);
-
-  const fetchWorkflows = async () => {
-    try {
+  const { data: workflows = [], isLoading } = useQuery({
+    queryKey: ["workflows"],
+    queryFn: async () => {
       const { data } = await api.get("/workflows");
-      setWorkflows(data.workflows);
-    } catch {
-      toast.error("Failed to load workflows");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data.workflows as Workflow[];
+    },
+    staleTime: 1000 * 60 * 5, // cache for 5 minutes — no refetch on navigation
+  });
 
-  const createWorkflow = async () => {
-    try {
+  const createMutation = useMutation({
+    mutationFn: async () => {
       const { data } = await api.post("/workflows", {
         name: "Untitled Workflow",
         description: "",
         trigger: { type: "manual", config: {} },
       });
-      router.push(`/designer/${data.workflow._id}`);
-    } catch {
-      toast.error("Failed to create workflow");
-    }
-  };
+      return data.workflow;
+    },
+    onSuccess: (workflow) => {
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      router.push(`/designer/${workflow._id}`);
+    },
+    onError: () => toast.error("Failed to create workflow"),
+  });
 
-  const deleteWorkflow = async (e: React.MouseEvent, id: string) => {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/workflows/${id}`);
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.setQueryData<Workflow[]>(
+        ["workflows"],
+        (prev) => prev?.filter((w) => w._id !== id) ?? [],
+      );
+      toast.success("Workflow deleted");
+    },
+    onError: () => toast.error("Failed to delete workflow"),
+  });
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!confirm("Delete this workflow? This cannot be undone.")) return;
-    setDeletingId(id);
-    try {
-      await api.delete(`/workflows/${id}`);
-      setWorkflows((prev) => prev.filter((w) => w._id !== id));
-      toast.success("Workflow deleted");
-    } catch {
-      toast.error("Failed to delete workflow");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-slate-100 text-slate-800";
-      case "paused":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-slate-100 text-slate-800";
-    }
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -87,13 +88,17 @@ export default function DashboardPage() {
             Build and manage your automations
           </p>
         </div>
-        <Button onClick={createWorkflow} className="flex items-center gap-2">
+        <Button
+          onClick={() => createMutation.mutate()}
+          disabled={createMutation.isPending}
+          className="flex items-center gap-2"
+        >
           <Plus size={16} />
-          New Workflow
+          {createMutation.isPending ? "Creating..." : "New Workflow"}
         </Button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-20 text-slate-400">Loading...</div>
       ) : workflows.length === 0 ? (
         <div className="text-center py-20">
@@ -104,7 +109,7 @@ export default function DashboardPage() {
           <p className="text-slate-400 text-sm mt-1">
             Create your first workflow to get started
           </p>
-          <Button onClick={createWorkflow} className="mt-4">
+          <Button onClick={() => createMutation.mutate()} className="mt-4">
             <Plus size={16} className="mr-2" />
             Create Workflow
           </Button>
@@ -129,8 +134,11 @@ export default function DashboardPage() {
                       {workflow.status}
                     </span>
                     <button
-                      onClick={(e) => deleteWorkflow(e, workflow._id)}
-                      disabled={deletingId === workflow._id}
+                      onClick={(e) => handleDelete(e, workflow._id)}
+                      disabled={
+                        deleteMutation.isPending &&
+                        deleteMutation.variables === workflow._id
+                      }
                       className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
                       <Trash2 size={14} />
