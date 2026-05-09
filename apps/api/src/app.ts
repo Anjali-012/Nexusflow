@@ -15,6 +15,7 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { ExpressAdapter } from "@bull-board/express";
 import { workflowQueue } from "./lib/queue";
+import aiRoutes from "./routes/ai.routes";
 import { metricsMiddleware } from "./middleware/metrics.middleware";
 
 const app = express();
@@ -64,5 +65,6 @@ app.use("/credentials", credentialRoutes);
 app.use(metricsMiddleware);
 app.use("/metrics", metricsRouter);
 app.use("/api-keys", apiKeyRoutes);
+app.use("/ai", aiRoutes);
 
 export default app;

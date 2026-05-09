@@ -18,6 +18,7 @@ import {
   Timer,
   ChevronDown,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { useWorkflowStore, NodeType, NodeSubType } from "@/store/workflowStore";
 import { NODE_PALETTE } from "@/lib/nodeRegistry";
@@ -25,6 +26,9 @@ import Canvas from "@/components/designer/Canvas";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import ExecutionPanel from "@/components/designer/ExecutionPanel";
 import { useCollaboration } from "@/hooks/useCollaboration";
+import AIGenerator, {
+  GeneratedWorkflow,
+} from "@/components/designer/AIGenerator";
 import CollaboratorPresence from "@/components/designer/CollaboratorPresence";
 
 const SUBTYPE_ICONS: Record<string, React.ReactNode> = {
@@ -132,6 +136,7 @@ export default function DesignerPage() {
   const [triggering, setTriggering] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const { collaborators, connected } = useCollaboration(workflowId);
+  const [showAI, setShowAI] = useState(false);
 
   useAutoSave(workflowId);
 
@@ -196,6 +201,17 @@ export default function DesignerPage() {
     }
   };
 
+  const handleAIGenerated = (generated: GeneratedWorkflow) => {
+    loadFromAPI(generated.nodes || [], generated.edges || []);
+    if (generated.name) {
+      setMeta({
+        id: workflowId,
+        name: generated.name,
+        status: meta?.status || "draft",
+      });
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-10">
@@ -224,6 +240,15 @@ export default function DesignerPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowAI(true)}
+            className="h-8 text-xs border-purple-200 text-purple-600 hover:bg-purple-50"
+          >
+            <Sparkles size={13} className="mr-1.5" />
+            AI Generate
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={triggerWorkflow}
             disabled={triggering}
             className="h-8 text-xs"
@@ -247,6 +272,15 @@ export default function DesignerPage() {
         <NodePalette onAdd={addNode} />
         <main className="flex-1 overflow-hidden relative">
           <Canvas />
+          {showAI && (
+            <AIGenerator
+              onGenerated={(w) => {
+                handleAIGenerated(w);
+                setShowAI(false);
+              }}
+              onClose={() => setShowAI(false)}
+            />
+          )}
           {activeRunId && (
             <ExecutionPanel
               runId={activeRunId}
